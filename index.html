@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>優質基督教音樂中小學 - Wind Band 點名系統</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; background: #f0f2f5; color: #333; }
+
+/* Header */
+.header { background: linear-gradient(135deg, #8B4513, #D2691E); color: white; padding: 15px 20px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.header h1 { font-size: 20px; margin-bottom: 4px; }
+.header h2 { font-size: 14px; font-weight: normal; opacity: 0.9; }
+
+/* Login Page */
+.login-container { max-width: 400px; margin: 80px auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+.login-container h3 { text-align: center; margin-bottom: 25px; font-size: 22px; color: #8B4513; }
+.login-container select, .login-container button { width: 100%; padding: 12px; font-size: 16px; border-radius: 8px; margin-bottom: 15px; }
+.login-container select { border: 2px solid #ddd; background: white; appearance: auto; }
+.login-container select:focus { border-color: #D2691E; outline: none; }
+
+/* Buttons */
+.btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: #D2691E; color: white; }
+.btn-primary:hover { background: #8B4513; }
+.btn-success { background: #27ae60; color: white; }
+.btn-success:hover { background: #1e8449; }
+.btn-danger { background: #e74c3c; color: white; }
+.btn-danger:hover { background: #c0392b; }
+.btn-secondary { background: #95a5a6; color: white; }
+.btn-secondary:hover { background: #7f8c8d; }
+
+/* Main Content */
+.container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
+.card { background: white; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+.card h3 { color: #8B4513; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #D2691E; padding-bottom: 8px; }
+
+/* Date Selector */
+.date-selector { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+.date-selector label { font-weight: bold; white-space: nowrap; }
+.date-selector select { padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 15px; min-width: 200px; }
+.date-selector select:focus { border-color: #D2691E; outline: none; }
+
+/* Student List */
+.student-list { display: grid; gap: 12px; }
+.student-item { display: grid; grid-template-columns: 50px 100px 1fr 100px 100px 1fr; gap: 12px; align-items: center; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #D2691E; }
+.student-item:hover { background: #e9ecef; }
+.student-item.present { border-left-color: #27ae60; background: #e8f5e9; }
+.student-item.absent { border-left-color: #e74c3c; background: #ffebee; }
+.student-item input[type="text"] { padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 100%; }
+.student-item input[type="text"]:focus { border-color: #D2691E; outline: none; }
+
+/* Status Buttons */
+.status-buttons { display: flex; gap: 8px; }
+.status-btn { padding: 8px 16px; border: 2px solid #ddd; background: white; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.status-btn.active-present { background: #27ae60; color: white; border-color: #27ae60; }
+.status-btn.active-absent { background: #e74c3c; color: white; border-color: #e74c3c; }
+.status-btn:hover { transform: translateY(-2px); }
+
+/* Action Bar */
+.action-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+
+/* Toast */
+.toast { position: fixed; top: 80px; right: 20px; background: #333; color: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; animation: slideIn 0.3s; }
+.toast.error { background: #e74c3c; }
+.toast.success { background: #27ae60; }
+@keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* Report Table */
+.report-table { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.report-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.report-table th, .report-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+.report-table th { background: #D2691E; color: white; font-weight: bold; position: sticky; top: 0; }
+.report-table tr:hover { background: #f8f9fa; }
+.report-table .status-present { color: #27ae60; font-weight: bold; }
+.report-table .status-absent { color: #e74c3c; font-weight: bold; }
+
+/* Filter Controls */
+.filter-controls { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+.filter-controls label { font-weight: bold; }
+.filter-controls select { padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 15px; }
+
+/* Tutor Status */
+.tutor-status { display: flex; flex-direction: column; gap: 8px; }
+
+/* Hidden */
+.hidden { display: none !important; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .student-item { grid-template-columns: 1fr; }
+  .action-bar { flex-direction: column; }
+  .date-selector { flex-direction: column; align-items: stretch; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>優質基督教音樂中小學</h1>
+  <h2>Wind Band 點名系統</h2>
+</div>
+
+<!-- Login Page -->
+<div id="login-page" class="login-container">
+  <h3>請選擇導師</h3>
+  <select id="tutor-select">
+    <option value="">-- 選擇導師 --</option>
+    <option value="Dr. William So">Dr. William So</option>
+    <option value="Mr. Henry Cheng">Mr. Henry Cheng</option>
+    <option value="admin">管理員</option>
+  </select>
+  <button class="btn btn-primary" onclick="login()">登入</button>
+</div>
+
+<!-- Tutor Page -->
+<div id="tutor-page" class="hidden">
+  <div class="container">
+    <div class="card">
+      <h3>選擇日期</h3>
+      <div class="date-selector">
+        <label>上課日期：</label>
+        <select id="date-select" onchange="onDateChange()">
+          <option value="">-- 選擇日期 --</option>
+        </select>
+        <span id="submission-status" style="margin-left:10px; font-weight:bold;"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Wind Band 學生名單</h3>
+      <div id="student-list" class="student-list"></div>
+      <div class="action-bar">
+        <button class="btn btn-success" onclick="submitAttendance()">提交點名</button>
+        <button class="btn btn-danger" onclick="resetAttendance()">重設點名</button>
+        <button class="btn btn-secondary" onclick="logout()">登出</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Page -->
+<div id="admin-page" class="hidden">
+  <div class="container">
+    <div class="card">
+      <h3>查看報告</h3>
+      <div class="filter-controls">
+        <label>模式：</label>
+        <select id="filter-mode" onchange="onFilterModeChange()">
+          <option value="date">單日報告</option>
+          <option value="month">月份報告</option>
+        </select>
+        
+        <div id="date-filter-container" style="display:flex; gap:15px; align-items:center;">
+          <label style="font-weight:bold; white-space:nowrap;">上課日期：</label>
+          <select id="admin-date-select" onchange="loadReport()">
+            <option value="">-- 選擇日期 --</option>
+          </select>
+        </div>
+
+        <div id="month-filter-container" class="hidden" style="display:none; gap:15px; align-items:center;">
+          <label style="font-weight:bold; white-space:nowrap;">月份：</label>
+          <select id="filter-month" onchange="onMonthChange()">
+            <option value="">-- 選擇月份 --</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="tutor-status-list" class="tutor-status"></div>
+    </div>
+
+    <div class="card">
+      <h3>學生出席記錄</h3>
+      <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+        <button class="btn btn-success" onclick="exportMonthExcelByInstrument()">匯出月份報告 (Excel)</button>
+        <button class="btn btn-success" onclick="showMonthCharts()">
+          <span style="font-size:18px;">📊</span> 月份圖表
+        </button>
+        <button class="btn btn-secondary" onclick="exportCSV()">匯出單日報告 (Excel)</button>
+        <button class="btn btn-secondary" onclick="logout()">登出</button>
+      </div>
+      <div class="report-table">
+        <table id="report-table">
+          <thead>
+            <tr>
+              <th>導師</th>
+              <th>樂器</th>
+              <th>班別學號</th>
+              <th>學生姓名</th>
+              <th>狀態</th>
+              <th>缺席原因</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart Modal -->
+<div id="chart-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:2000; display:flex; align-items:center; justify-content:center;">
+  <div style="background:white; border-radius:12px; padding:30px; max-width:90%; max-height:90%; overflow:auto; position:relative;">
+    <button onclick="closeChartModal()" style="position:absolute; top:15px; right:15px; background:#e74c3c; color:white; border:none; border-radius:50%; width:35px; height:35px; font-size:20px; cursor:pointer;">×</button>
+    <h3 style="margin-bottom:20px; color:#8B4513;">月份出席統計</h3>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap:30px;">
+      <div>
+        <h4 style="text-align:center; margin-bottom:10px;">各導師提交狀況</h4>
+        <canvas id="tutorChart" style="max-height:300px;"></canvas>
+      </div>
+      <div>
+        <h4 style="text-align:center; margin-bottom:10px;">每日出席統計</h4>
+        <canvas id="dailyChart" style="max-height:300px;"></canvas>
+      </div>
+      <div>
+        <h4 style="text-align:center; margin-bottom:10px;">缺席原因分佈</h4>
+        <canvas id="reasonChart" style="max-height:300px;"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== CONFIGURATION ====================
+// IMPORTANT: Replace this with your deployed Google Apps Script URL
+const API_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+
+const CLASS_DATES = [
+  "2026-03-10",
+  "2026-03-17",
+  "2026-03-19",
+  "2026-03-21",
+  "2026-03-23",
+  "2026-03-26",
+  "2026-03-28"
+];
+
+const DAY_OF_WEEK = ['日', '一', '二', '三', '四', '五', '六'];
+
+const TUTOR_DATA = {
+  "Dr. William So": {
+    "Wind Band": {
+      "time": "不適用",
+      "room": "Concert Hall",
+      "students": [
+        { "class_no": "11I", "name": "譚天兒", "instrument": "Flute" },
+        { "class_no": "11I", "name": "陳峻嘉", "instrument": "Flute" },
+        { "class_no": "7M", "name": "Lam Hong Ching", "instrument": "Flute" },
+        { "class_no": "8I", "name": "蔡卓霖", "instrument": "Flute" },
+        { "class_no": "8Q", "name": "顏以祈", "instrument": "Flute" },
+        { "class_no": "7M", "name": "馮子倩", "instrument": "Flute" },
+        { "class_no": "7M", "name": "簡永郗", "instrument": "Flute" },
+        { "class_no": "7Q", "name": "蘇沛行", "instrument": "Flute" },
+        { "class_no": "10C", "name": "許恩娜", "instrument": "Oboe" },
+        { "class_no": "10C", "name": "廖梓淇", "instrument": "Oboe" },
+        { "class_no": "7M", "name": "李保頤", "instrument": "Oboe" },
+        { "class_no": "7M", "name": "黃恩悅", "instrument": "Oboe" },
+        { "class_no": "9M", "name": "溫紫柔", "instrument": "Oboe" },
+        { "class_no": "10C", "name": "陳希潼", "instrument": "Clarinet" },
+        { "class_no": "7M", "name": "黎殷楠", "instrument": "Bass Clarinet" },
+        { "class_no": "7M", "name": "林柏翰", "instrument": "Clarinet" },
+        { "class_no": "5I", "name": "盧睿", "instrument": "Clarinet" },
+        { "class_no": "6I", "name": "呂文智", "instrument": "Clarinet" },
+        { "class_no": "7I", "name": "吳庭恩", "instrument": "Clarinet" },
+        { "class_no": "7M", "name": "姚璟崇", "instrument": "Clarinet" },
+        { "class_no": "7Q", "name": "簡卓宏", "instrument": "Clarinet" },
+        { "class_no": "8I", "name": "楊子申", "instrument": "Clarinet" },
+        { "class_no": "9M", "name": "梁日朗", "instrument": "Bassoon" },
+        { "class_no": "10I", "name": "林子皓", "instrument": "Bassoon" },
+        { "class_no": "11I", "name": "曾浚言", "instrument": "Saxophone" },
+        { "class_no": "9C", "name": "余熙峻", "instrument": "Saxophone" },
+        { "class_no": "7C", "name": "胡裕僖", "instrument": "Saxophone" },
+        { "class_no": "7Q", "name": "唐灝信", "instrument": "Trumpet" },
+        { "class_no": "9M", "name": "梁恩霖", "instrument": "Trumpet" },
+        { "class_no": "7M", "name": "蔡樂騫", "instrument": "Trumpet" },
+        { "class_no": "8M", "name": "李柏澄", "instrument": "Trumpet" },
+        { "class_no": "7I", "name": "洪梓煬", "instrument": "Trumpet" },
+        { "class_no": "7Q", "name": "周逸宸", "instrument": "Horn" },
+        { "class_no": "9I", "name": "黎子雋", "instrument": "Horn" },
+        { "class_no": "11I", "name": "高正霖", "instrument": "Horn" },
+        { "class_no": "8M", "name": "芮子昊", "instrument": "Trombone" },
+        { "class_no": "7C", "name": "梁奕曦", "instrument": "Trombone" },
+        { "class_no": "7M", "name": "黃灝喆", "instrument": "Trombone" },
+        { "class_no": "7M", "name": "鄭智燊", "instrument": "Euphonium" },
+        { "class_no": "11C", "name": "溫潁嵐", "instrument": "Euphonium" },
+        { "class_no": "8C", "name": "何芷頤", "instrument": "Percussion" },
+        { "class_no": "9C", "name": "梁啟廸", "instrument": "Percussion" },
+        { "class_no": "9I", "name": "邵彥喆", "instrument": "Percussion" },
+        { "class_no": "9I", "name": "曾寶", "instrument": "Percussion" },
+        { "class_no": "7I", "name": "諶行", "instrument": "Percussion" },
+        { "class_no": "7I", "name": "郭鎧舜", "instrument": "Percussion" },
+        { "class_no": "10Q", "name": "施宇俙", "instrument": "Percussion" },
+        { "class_no": "N/A", "name": "Double Bass", "instrument": "Double Bass" }
+      ]
+    }
+  },
+  "Mr. Henry Cheng": {
+    "Wind Band": {
+      "time": "不適用",
+      "room": "Concert Hall",
+      "students": [
+        { "class_no": "11I", "name": "譚天兒", "instrument": "Flute" },
+        { "class_no": "11I", "name": "陳峻嘉", "instrument": "Flute" },
+        { "class_no": "7M", "name": "Lam Hong Ching", "instrument": "Flute" },
+        { "class_no": "8I", "name": "蔡卓霖", "instrument": "Flute" },
+        { "class_no": "8Q", "name": "顏以祈", "instrument": "Flute" },
+        { "class_no": "7M", "name": "馮子倩", "instrument": "Flute" },
+        { "class_no": "7M", "name": "簡永郗", "instrument": "Flute" },
+        { "class_no": "7Q", "name": "蘇沛行", "instrument": "Flute" },
+        { "class_no": "10C", "name": "許恩娜", "instrument": "Oboe" },
+        { "class_no": "10C", "name": "廖梓淇", "instrument": "Oboe" },
+        { "class_no": "7M", "name": "李保頤", "instrument": "Oboe" },
+        { "class_no": "7M", "name": "黃恩悅", "instrument": "Oboe" },
+        { "class_no": "9M", "name": "溫紫柔", "instrument": "Oboe" },
+        { "class_no": "10C", "name": "陳希潼", "instrument": "Clarinet" },
+        { "class_no": "7M", "name": "黎殷楠", "instrument": "Bass Clarinet" },
+        { "class_no": "7M", "name": "林柏翰", "instrument": "Clarinet" },
+        { "class_no": "5I", "name": "盧睿", "instrument": "Clarinet" },
+        { "class_no": "6I", "name": "呂文智", "instrument": "Clarinet" },
+        { "class_no": "7I", "name": "吳庭恩", "instrument": "Clarinet" },
+        { "class_no": "7M", "name": "姚璟崇", "instrument": "Clarinet" },
+        { "class_no": "7Q", "name": "簡卓宏", "instrument": "Clarinet" },
+        { "class_no": "8I", "name": "楊子申", "instrument": "Clarinet" },
+        { "class_no": "9M", "name": "梁日朗", "instrument": "Bassoon" },
+        { "class_no": "10I", "name": "林子皓", "instrument": "Bassoon" },
+        { "class_no": "11I", "name": "曾浚言", "instrument": "Saxophone" },
+        { "class_no": "9C", "name": "余熙峻", "instrument": "Saxophone" },
+        { "class_no": "7C", "name": "胡裕僖", "instrument": "Saxophone" },
+        { "class_no": "7Q", "name": "唐灝信", "instrument": "Trumpet" },
+        { "class_no": "9M", "name": "梁恩霖", "instrument": "Trumpet" },
+        { "class_no": "7M", "name": "蔡樂騫", "instrument": "Trumpet" },
+        { "class_no": "8M", "name": "李柏澄", "instrument": "Trumpet" },
+        { "class_no": "7I", "name": "洪梓煬", "instrument": "Trumpet" },
+        { "class_no": "7Q", "name": "周逸宸", "instrument": "Horn" },
+        { "class_no": "9I", "name": "黎子雋", "instrument": "Horn" },
+        { "class_no": "11I", "name": "高正霖", "instrument": "Horn" },
+        { "class_no": "8M", "name": "芮子昊", "instrument": "Trombone" },
+        { "class_no": "7C", "name": "梁奕曦", "instrument": "Trombone" },
+        { "class_no": "7M", "name": "黃灝喆", "instrument": "Trombone" },
+        { "class_no": "7M", "name": "鄭智燊", "instrument": "Euphonium" },
+        { "class_no": "11C", "name": "溫潁嵐", "instrument": "Euphonium" },
+        { "class_no": "8C", "name": "何芷頤", "instrument": "Percussion" },
+        { "class_no": "9C", "name": "梁啟廸", "instrument": "Percussion" },
+        { "class_no": "9I", "name": "邵彥喆", "instrument": "Percussion" },
+        { "class_no": "9I", "name": "曾寶", "instrument": "Percussion" },
+        { "class_no": "7I", "name": "諶行", "instrument": "Percussion" },
+        { "class_no": "7I", "name": "郭鎧舜", "instrument": "Percussion" },
+        { "class_no": "10Q", "name": "施宇俙", "instrument": "Percussion" },
+        { "class_no": "N/A", "name": "Double Bass", "instrument": "Double Bass" }
+      ]
+    }
+  }
+};
+
+// ==================== GOOGLE SHEETS API ====================
+async function apiGet(action, params = {}) {
+  const url = new URL(API_URL);
+  url.searchParams.set('action', action);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const resp = await fetch(url.toString());
+  return await resp.json();
+}
+
+async function apiPost(action, data) {
+  const url = new URL(API_URL);
+  url.searchParams.set('action', action);
+  url.searchParams.set('payload', btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
+  try {
+    const resp = await fetch(url.toString());
+    const text = await resp.text();
+    console.log('apiPost raw response:', text);
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error('apiPost JSON parse error:', e, 'raw:', text);
+      return { error: 'Invalid response from server' };
+    }
+  } catch (err) {
+    console.error('apiPost fetch error:', err);
+    throw err;
+  }
+}
+
+// ==================== STORAGE (Google Sheets) ====================
+function getRecords() {
+  return window._cachedRecords || [];
+}
+
+async function fetchRecords(date) {
+  try {
+    const result = await apiGet('getRecords', { date: date || '' });
+    const grouped = {};
+    (result.records || []).forEach(r => {
+      const key = `${r.date}__${r.tutor}`;
+      if (!grouped[key]) {
+        grouped[key] = { date: r.date, tutor: r.tutor, timestamp: r.timestamp, entries: {} };
+      }
+      const entryKey = `${r.instrument}__${r.classNo}__${r.name}`;
+      grouped[key].entries[entryKey] = {
+        instrument: r.instrument, classNo: r.classNo, name: r.name,
+        status: r.status, reason: r.reason || ''
+      };
+    });
+    window._cachedRecords = Object.values(grouped);
+    return window._cachedRecords;
+  } catch (err) {
+    console.error('fetchRecords error:', err);
+    showToast('載入記錄失敗：' + err.message, true);
+    return [];
+  }
+}
+
+async function saveAttendance(date, tutor, entries) {
+  try {
+    const result = await apiPost('submitAttendance', { date, tutor, entries });
+    if (result.error) throw new Error(result.error);
+    await fetchRecords(date);
+    return true;
+  } catch (err) {
+    console.error('saveAttendance error:', err);
+    showToast('提交失敗：' + err.message, true);
+    return false;
+  }
+}
+
+async function deleteAttendance(date, tutor) {
+  try {
+    const result = await apiPost('resetAttendance', { date, tutor });
+    if (result.error) throw new Error(result.error);
+    await fetchRecords(date);
+    return true;
+  } catch (err) {
+    console.error('deleteAttendance error:', err);
+    showToast('重設失敗：' + err.message, true);
+    return false;
+  }
+}
+
+// ==================== STATE ====================
+let currentTutor = '';
+let currentDate = '';
+let selectedMonthDates = [];
+
+// ==================== INITIALIZATION ====================
+function init() {
+  initDateSelects();
+  initMonthFilter();
+}
+
+function initDateSelects() {
+  const tutorDateSelect = document.getElementById('date-select');
+  const adminDateSelect = document.getElementById('admin-date-select');
+  
+  CLASS_DATES.forEach(date => {
+    const d = new Date(date + 'T00:00:00');
+    const dayName = DAY_OF_WEEK[d.getDay()];
+    const label = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 (${dayName})`;
+    
+    const opt1 = document.createElement('option');
+    opt1.value = date;
+    opt1.textContent = label;
+    tutorDateSelect.appendChild(opt1);
+    
+    const opt2 = document.createElement('option');
+    opt2.value = date;
+    opt2.textContent = label;
+    adminDateSelect.appendChild(opt2);
+  });
+}
+
+function initMonthFilter() {
+  const monthSelect = document.getElementById('filter-month');
+  const months = [...new Set(CLASS_DATES.map(d => d.substring(0, 7)))].sort();
+  
+  months.forEach(month => {
+    const [year, m] = month.split('-');
+    const opt = document.createElement('option');
+    opt.value = month;
+    opt.textContent = `${year}年${parseInt(m)}月`;
+    monthSelect.appendChild(opt);
+  });
+  
+  if (months.length > 0) {
+    monthSelect.value = months[0];
+  }
+}
+
+function onFilterModeChange() {
+  const mode = document.getElementById('filter-mode').value;
+  const dateContainer = document.getElementById('date-filter-container');
+  const monthContainer = document.getElementById('month-filter-container');
+  
+  if (mode === 'month') {
+    dateContainer.style.display = 'none';
+    monthContainer.style.display = 'flex';
+    monthContainer.classList.remove('hidden');
+    onMonthChange();
+  } else {
+    dateContainer.style.display = 'flex';
+    monthContainer.style.display = 'none';
+    const thead = document.getElementById('report-table').getElementsByTagName('thead')[0];
+    thead.innerHTML = '<tr><th>導師</th><th>樂器</th><th>班別學號</th><th>學生姓名</th><th>狀態</th><th>缺席原因</th></tr>';
+    loadReport();
+  }
+}
+
+function onMonthChange() {
+  const selectedMonth = document.getElementById('filter-month').value;
+  selectedMonthDates = CLASS_DATES.filter(d => d.startsWith(selectedMonth));
+  loadMonthReport();
+}
+
+async function loadMonthReport() {
+  if (!selectedMonthDates.length) {
+    document.getElementById('tutor-status-list').innerHTML = '<span style="color:#999;">該月份沒有上課日期</span>';
+    document.getElementById('report-table').getElementsByTagName('tbody')[0].innerHTML = '';
+    return;
+  }
+
+  document.getElementById('tutor-status-list').innerHTML = '<span style="color:#999;">載入中...</span>';
+  document.getElementById('report-table').getElementsByTagName('tbody')[0].innerHTML = '<tr><td colspan="8" style="text-align:center; color:#999; padding:20px;">載入中...</td></tr>';
+
+  try {
+    const allRecords = [];
+    for (const date of selectedMonthDates) {
+      try {
+        await fetchRecords(date);
+        const records = getRecords();
+        allRecords.push(...records.filter(r => r.date === date));
+      } catch (err) {
+        console.error('Failed to fetch records for date:', date, err);
+      }
+    }
+
+    const tutorNames = Object.keys(TUTOR_DATA);
+
+    // Tutor submission status
+    const statusHtml = [];
+    tutorNames.forEach(tutor => {
+      const dateStatuses = selectedMonthDates.map(date => {
+        const submitted = allRecords.some(r => r.date === date && r.tutor.trim() === tutor.trim());
+        const d = new Date(date + 'T00:00:00');
+        const label = `${d.getDate()}/${d.getMonth()+1}`;
+        return submitted
+          ? `<span style="color:#27ae60; font-size:11px;">${label}✅</span>`
+          : `<span style="color:#e74c3c; font-size:11px;">${label}❌</span>`;
+      }).join(' ');
+      statusHtml.push(`<div style="margin:4px 0; padding:6px 12px; border-radius:6px; background:#f8f9fa; font-size:13px; border:1px solid #ddd;"><b>${tutor}</b>：${dateStatuses}</div>`);
+    });
+    document.getElementById('tutor-status-list').innerHTML = statusHtml.join('');
+
+    // Rebuild table header
+    const thead = document.getElementById('report-table').getElementsByTagName('thead')[0];
+    let headerHtml = '<tr><th>班別學號</th><th>學生姓名</th>';
+    selectedMonthDates.forEach(date => {
+      const d = new Date(date + 'T00:00:00');
+      const dayName = DAY_OF_WEEK[d.getDay()];
+      headerHtml += `<th style="text-align:center; min-width:60px;">${d.getDate()}/${d.getMonth()+1}<br>(${dayName})</th>`;
+    });
+    headerHtml += '<th>出席</th><th>缺席</th></tr>';
+    thead.innerHTML = headerHtml;
+
+    // Build rows by instrument
+    const instrumentGroups = {};
+    tutorNames.forEach(tutor => {
+      const instruments = TUTOR_DATA[tutor];
+      Object.keys(instruments).forEach(instrument => {
+        const info = instruments[instrument];
+        const groupKey = `${instrument}|||${tutor}|||${info.time}|||${info.room}`;
+
+        if (!instrumentGroups[groupKey]) {
+          instrumentGroups[groupKey] = {
+            tutor, instrument, time: info.time, room: info.room, students: []
+          };
+        }
+
+        info.students.forEach(student => {
+          const attendanceByDate = {};
+          selectedMonthDates.forEach(date => {
+            const record = allRecords.find(r => r.date === date && r.tutor.trim() === tutor.trim());
+            let status = '', reason = '', submitted = false;
+            if (record && record.entries) {
+              const entryKey = `${student.instrument}__${student.class_no}__${student.name}`;
+              let entry = record.entries[entryKey];
+              if (!entry) {
+                entry = Object.values(record.entries).find(e =>
+                  e.name.trim() === student.name.trim() && e.instrument.trim() === student.instrument.trim()
+                );
+              }
+              if (entry) { status = entry.status; reason = entry.reason || ''; submitted = true; }
+            }
+            attendanceByDate[date] = { status, reason, submitted };
+          });
+          instrumentGroups[groupKey].students.push({
+            classNo: student.class_no, name: student.name, instrument: student.instrument, attendanceByDate
+          });
+        });
+      });
+    });
+
+    const CLASS_COLORS = [
+      '#dbeafe', '#fef3c7', '#d1fae5', '#ede9fe', '#fce7f3',
+      '#cffafe', '#fde68a', '#bbf7d0', '#ddd6fe', '#fbcfe8'
+    ];
+    let colorIdx = 0;
+    const totalDateCols = selectedMonthDates.length;
+    const totalCols = 2 + totalDateCols + 2;
+    let html = '';
+
+    Object.values(instrumentGroups).forEach(group => {
+      if (group.students.length === 0) return;
+      const bg = CLASS_COLORS[colorIdx % CLASS_COLORS.length];
+      colorIdx++;
+
+      html += `<tr style="background:${bg};"><td colspan="${totalCols}" style="padding:10px 15px; font-weight:bold; font-size:14px; color:#8B4513; border-top:2px solid #8B4513;"><b>${group.instrument}</b>　　導師：${group.tutor}　　課室：${group.room}</td></tr>`;
+
+      group.students.forEach((student, si) => {
+        const stripeBg = si % 2 === 0 ? '#fff' : '#f8f9fa';
+        let presentCount = 0, absentCount = 0;
+        let dateCells = '';
+
+        selectedMonthDates.forEach(date => {
+          const att = student.attendanceByDate[date];
+          if (!att.submitted) {
+            dateCells += `<td style="text-align:center; color:#e74c3c; font-size:11px;">導師未點名</td>`;
+          } else if (att.status === 'present') {
+            dateCells += `<td style="text-align:center; color:#27ae60; font-weight:bold;">✓</td>`;
+            presentCount++;
+          } else {
+            const tip = att.reason ? ` title="${att.reason}"` : '';
+            dateCells += `<td style="text-align:center; color:#e74c3c; font-weight:bold; cursor:${att.reason ? 'help' : 'default'};"${tip}>✗</td>`;
+            absentCount++;
+          }
+        });
+
+        html += `<tr style="background:${stripeBg};"><td>${student.classNo}</td><td>${student.name}</td>${dateCells}<td style="text-align:center; color:#27ae60; font-weight:bold;">${presentCount}</td><td style="text-align:center; color:#e74c3c; font-weight:bold;">${absentCount}</td></tr>`;
+      });
+    });
+
+    document.getElementById('report-table').getElementsByTagName('tbody')[0].innerHTML = html;
+
+  } catch (err) {
+    console.error('loadMonthReport error:', err);
+    document.getElementById('tutor-status-list').innerHTML = '<span style="color:#e74c3c;">載入失敗：' + err.message + '</span>';
+    document.getElementById('report-table').getElementsByTagName('tbody')[0].innerHTML = '';
+    showToast('載入失敗: ' + err.message, true);
+  }
+}
+
+// ==================== LOGIN ====================
+function login() {
+  const tutor = document.getElementById('tutor-select').value;
+  if (!tutor) {
+    showToast('請選擇導師', true);
+    return;
+  }
+  
+  currentTutor = tutor;
+  document.getElementById('login-page').classList.add('hidden');
+  
+  if (tutor === 'admin') {
+    document.getElementById('admin-page').classList.remove('hidden');
+    loadReport();
+  } else {
+    document.getElementById('tutor-page').classList.remove('hidden');
+  }
+}
+
+function logout() {
+  currentTutor = '';
+  currentDate = '';
+  document.getElementById('tutor-page').classList.add('hidden');
+  document.getElementById('admin-page').classList.add('hidden');
+  document.getElementById('login-page').classList.remove('hidden');
+  document.getElementById('tutor-select').value = '';
+}
+
+// ==================== TUTOR PAGE ====================
+async function onDateChange() {
+  const date = document.getElementById('date-select').value;
+  if (!date) return;
+  
+  currentDate = date;
+  await fetchRecords(date);
+  renderStudentList();
+  updateSubmissionStatus();
+}
+
+function updateSubmissionStatus() {
+  const statusSpan = document.getElementById('submission-status');
+  const records = getRecords();
+  const record = records.find(r => r.date === currentDate && r.tutor.trim() === currentTutor.trim());
+  
+  if (record) {
+    statusSpan.textContent = '✅ 已提交';
+    statusSpan.style.color = '#27ae60';
+  } else {
+    statusSpan.textContent = '❌ 未提交';
+    statusSpan.style.color = '#e74c3c';
+  }
+}
+
+function renderStudentList() {
+  const container = document.getElementById('student-list');
+  const records = getRecords();
+  const record = records.find(r => r.date === currentDate && r.tutor.trim() === currentTutor.trim());
+  
+  const instruments = TUTOR_DATA[currentTutor];
+  if (!instruments) {
+    container.innerHTML = '<p style="color:#999;">無學生資料</p>';
+    return;
+  }
+  
+  let html = '';
+  let index = 1;
+  
+  Object.keys(instruments).forEach(instrumentClass => {
+    const info = instruments[instrumentClass];
+    info.students.forEach(student => {
+      const entryKey = `${student.instrument}__${student.class_no}__${student.name}`;
+      let status = '';
+      let reason = '';
+      
+      if (record && record.entries && record.entries[entryKey]) {
+        status = record.entries[entryKey].status;
+        reason = record.entries[entryKey].reason || '';
+      }
+      
+      const itemClass = status === 'present' ? 'student-item present' : status === 'absent' ? 'student-item absent' : 'student-item';
+      
+      html += `
+        <div class="${itemClass}" data-instrument="${student.instrument}" data-classno="${student.class_no}" data-name="${student.name}">
+          <span style="font-weight:bold; color:#8B4513;">${index}</span>
+          <span style="font-size:13px; color:#666;">${student.class_no}</span>
+          <span style="font-weight:bold;">${student.name}</span>
+          <span style="font-size:12px; color:#999;">${student.instrument}</span>
+          <div class="status-buttons">
+            <button class="status-btn ${status === 'present' ? 'active-present' : ''}" onclick="setStatus(this, 'present')">出席</button>
+            <button class="status-btn ${status === 'absent' ? 'active-absent' : ''}" onclick="setStatus(this, 'absent')">缺席</button>
+          </div>
+          <input type="text" placeholder="缺席原因" value="${reason}" ${status !== 'absent' ? 'disabled' : ''} onchange="updateReason(this)">
+        </div>
+      `;
+      index++;
+    });
+  });
+  
+  container.innerHTML = html;
+}
+
+function setStatus(btn, status) {
+  const item = btn.closest('.student-item');
+  const buttons = item.querySelectorAll('.status-btn');
+  const reasonInput = item.querySelector('input[type="text"]');
+  
+  buttons.forEach(b => {
+    b.classList.remove('active-present', 'active-absent');
+  });
+  
+  if (status === 'present') {
+    btn.classList.add('active-present');
+    item.classList.remove('absent');
+    item.classList.add('present');
+    reasonInput.disabled = true;
+    reasonInput.value = '';
+  } else {
+    btn.classList.add('active-absent');
+    item.classList.remove('present');
+    item.classList.add('absent');
+    reasonInput.disabled = false;
+  }
+}
+
+function updateReason(input) {
+  // Reason is stored in the input field, will be collected on submit
+}
+
+async function submitAttendance() {
+  if (!currentDate) {
+    showToast('請選擇日期', true);
+    return;
+  }
+  
+  const items = document.querySelectorAll('.student-item');
+  const entries = [];
+  
+  items.forEach(item => {
+    const instrument = item.dataset.instrument;
+    const classNo = item.dataset.classno;
+    const name = item.dataset.name;
+    const presentBtn = item.querySelector('.status-btn.active-present');
+    const absentBtn = item.querySelector('.status-btn.active-absent');
+    const reasonInput = item.querySelector('input[type="text"]');
+    
+    let status = '';
+    if (presentBtn) status = 'present';
+    else if (absentBtn) status = 'absent';
+    
+    if (!status) return; // Skip if not marked
+    
+    entries.push({
+      instrument,
+      classNo,
+      name,
+      status,
+      reason: status === 'absent' ? reasonInput.value : ''
+    });
+  });
+  
+  if (entries.length === 0) {
+    showToast('請至少標記一位學生', true);
+    return;
+  }
+  
+  const success = await saveAttendance(currentDate, currentTutor, entries);
+  if (success) {
+    showToast('提交成功');
+    updateSubmissionStatus();
+  }
+}
+
+async function resetAttendance() {
+  if (!currentDate) {
+    showToast('請選擇日期', true);
+    return;
+  }
+  
+  if (!confirm('確定要重設這天的點名記錄嗎？')) return;
+  
+  const success = await deleteAttendance(currentDate, currentTutor);
+  if (success) {
+    showToast('已重設');
+    renderStudentList();
+    updateSubmissionStatus();
+  }
+}
+
+// ==================== ADMIN PAGE ====================
+async function loadReport() {
+  const mode = document.getElementById('filter-mode').value;
+  if (mode === 'month') {
+    loadMonthReport();
+    return;
+  }
+
+  const selectedDate = document.getElementById('admin-date-select').value;
+  if (!selectedDate) {
+    document.getElementById('tutor-status-list').innerHTML = '<span style="color:#999;">請選擇日期</span>';
+    document.getElementById('report-table').getElementsByTagName('tbody')[0].innerHTML = '';
+    return;
+  }
+
+  document.getElementById('tutor-status-list').innerHTML = '<span style="color:#999;">載入中...</span>';
+  document.getElementById('report-table').getElementsByTagName('tbody')[0].innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999; padding:20px;">載入中...</td></tr>';
+
+  try {
+    await fetchRecords(selectedDate);
+    const records = getRecords();
+    const tutorNames = Object.keys(TUTOR_DATA);
+
+    // Tutor submission status
+    const statusHtml = tutorNames.map(tutor => {
+      const submitted = records.some(r => r.date === selectedDate && r.tutor.trim() === tutor.trim());
+      const icon = submitted ? '✅' : '❌';
+      const color = submitted ? '#27ae60' : '#e74c3c';
+      return `<div style="padding:8px 12px; border-radius:6px; background:#f8f9fa; font-size:14px; border:1px solid #ddd;"><span style="color:${color};">${icon}</span> <b>${tutor}</b></div>`;
+    }).join('');
+    document.getElementById('tutor-status-list').innerHTML = statusHtml;
+
+    // Build table
+    const CLASS_COLORS = [
+      '#dbeafe', '#fef3c7', '#d1fae5', '#ede9fe', '#fce7f3',
+      '#cffafe', '#fde68a', '#bbf7d0', '#ddd6fe', '#fbcfe8',
+      '#bae6fd', '#fed7aa', '#a7f3d0', '#c7d2fe', '#f9a8d4'
+    ];
+    let colorIdx = 0;
+    let html = '';
+
+    tutorNames.forEach(tutor => {
+      const record = records.find(r => r.date === selectedDate && r.tutor.trim() === tutor.trim());
+      const instruments = TUTOR_DATA[tutor];
+
+      Object.keys(instruments).forEach(instrumentClass => {
+        const info = instruments[instrumentClass];
+        const bg = CLASS_COLORS[colorIdx % CLASS_COLORS.length];
+        colorIdx++;
+
+        // Group header
+        html += `<tr style="background:${bg};"><td colspan="6" style="padding:10px 15px; font-weight:bold; font-size:14px; color:#8B4513; border-top:2px solid #8B4513;">${tutor} - ${instrumentClass}　　課室：${info.room}</td></tr>`;
+
+        // Student rows
+        info.students.forEach((student, si) => {
+          const stripeBg = si % 2 === 0 ? '#fff' : '#f8f9fa';
+          const entryKey = `${student.instrument}__${student.class_no}__${student.name}`;
+          let statusCell = '';
+          let reasonCell = '';
+
+          if (!record) {
+            statusCell = `<span style="color:#e74c3c; font-weight:bold;">導師未點名</span>`;
+            reasonCell = '-';
+          } else if (record.entries && record.entries[entryKey]) {
+            const entry = record.entries[entryKey];
+            if (entry.status === 'present') {
+              statusCell = `<span style="color:#27ae60; font-weight:bold;">✓ 出席</span>`;
+              reasonCell = '-';
+            } else {
+              statusCell = `<span style="color:#e74c3c; font-weight:bold;">✗ 缺席</span>`;
+              reasonCell = entry.reason || '-';
+            }
+          } else {
+            statusCell = `<span style="color:#e74c3c; font-weight:bold;">導師未點名</span>`;
+            reasonCell = '-';
+          }
+
+          html += `<tr style="background:${stripeBg};"><td>${tutor}</td><td>${student.instrument}</td><td>${student.class_no}</td><td>${student.name}</td><td>${statusCell}</td><td>${reasonCell}</td></tr>`;
+        });
+      });
+    });
+
+    document.getElementById('report-table').getElementsByTagName('tbody')[0].innerHTML = html;
+
+  } catch (err) {
+    console.error('loadReport error:', err);
+    document.getElementById('tutor-status-list').innerHTML = '<span style="color:#e74c3c;">載入失敗：' + err.message + '</span>';
+    document.getElementById('report-table').getElementsByTagName('tbody')[0].innerHTML = '';
+    showToast('載入失敗: ' + err.message, true);
+  }
+}
+
+// ==================== EXPORT ====================
+function exportCSV() {
+  const mode = document.getElementById('filter-mode').value;
+  if (mode === 'month') {
+    exportMonthExcelByInstrument();
+    return;
+  }
+
+  const selectedDate = document.getElementById('admin-date-select').value;
+  if (!selectedDate) {
+    showToast('請選擇日期', true);
+    return;
+  }
+
+  const records = getRecords();
+  const tutorNames = Object.keys(TUTOR_DATA);
+  const data = [['導師', '樂器', '班別學號', '學生姓名', '狀態', '缺席原因']];
+
+  tutorNames.forEach(tutor => {
+    const record = records.find(r => r.date === selectedDate && r.tutor.trim() === tutor.trim());
+    const instruments = TUTOR_DATA[tutor];
+
+    Object.keys(instruments).forEach(instrumentClass => {
+      const info = instruments[instrumentClass];
+      info.students.forEach(student => {
+        const entryKey = `${student.instrument}__${student.class_no}__${student.name}`;
+        let status = '⚠️ 導師未點名';
+        let reason = '';
+
+        if (record && record.entries && record.entries[entryKey]) {
+          const entry = record.entries[entryKey];
+          status = entry.status === 'present' ? '✓ 出席' : '✗ 缺席';
+          reason = entry.reason || '';
+        }
+
+        data.push([tutor, student.instrument, student.class_no, student.name, status, reason]);
+      });
+    });
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, '點名報告');
+  XLSX.writeFile(wb, `點名報告_${selectedDate}.xlsx`);
+  showToast('已匯出');
+}
+
+async function exportMonthExcelByInstrument() {
+  try {
+    showToast('正在匯出月份報告...');
+    const selectedMonth = document.getElementById('filter-month').value;
+    const monthDates = CLASS_DATES.filter(d => d.startsWith(selectedMonth));
+
+    if (!monthDates.length) {
+      showToast('該月份沒有上課日期', true);
+      return;
+    }
+
+    const allRecords = [];
+    for (const date of monthDates) {
+      try {
+        await fetchRecords(date);
+        const records = getRecords();
+        allRecords.push(...records.filter(r => r.date === date));
+      } catch (err) {
+        console.error('Failed to fetch records for date:', date, err);
+      }
+    }
+
+    // Build data grouped by instrument
+    const instrumentGroups = {};
+    const tutorNames = Object.keys(TUTOR_DATA);
+    tutorNames.forEach(tutor => {
+      const instruments = TUTOR_DATA[tutor];
+      Object.keys(instruments).forEach(instrument => {
+        const info = instruments[instrument];
+        const groupKey = `${instrument}|||${tutor}|||${info.time}|||${info.room}`;
+
+        if (!instrumentGroups[groupKey]) {
+          instrumentGroups[groupKey] = {
+            tutor: tutor,
+            instrument: instrument,
+            time: info.time,
+            room: info.room,
+            students: []
+          };
+        }
+
+        info.students.forEach(student => {
+          const attendanceByDate = {};
+          monthDates.forEach(date => {
+            const record = allRecords.find(r => r.date === date && r.tutor.trim() === tutor.trim());
+            let status = '';
+            let reason = '';
+            let submitted = false;
+
+            if (record && record.entries) {
+              const entryKey = `${student.instrument}__${student.class_no}__${student.name}`;
+              let entry = record.entries[entryKey];
+              if (!entry) {
+                entry = Object.values(record.entries).find(e =>
+                  e.name.trim() === student.name.trim() && e.instrument.trim() === student.instrument.trim()
+                );
+              }
+              if (entry) {
+                status = entry.status;
+                reason = entry.reason || '';
+                submitted = true;
+              }
+            }
+            attendanceByDate[date] = { status, reason, submitted };
+          });
+
+          instrumentGroups[groupKey].students.push({
+            classNo: student.class_no,
+            name: student.name,
+            instrument: student.instrument,
+            attendanceByDate: attendanceByDate
+          });
+        });
+      });
+    });
+
+    // Styling constants
+    const thinBorder = {
+      top: { style: 'thin', color: { rgb: 'AAAAAA' } },
+      bottom: { style: 'thin', color: { rgb: 'AAAAAA' } },
+      left: { style: 'thin', color: { rgb: 'AAAAAA' } },
+      right: { style: 'thin', color: { rgb: 'AAAAAA' } }
+    };
+    const GROUP_BG = [
+      'DBEAFE', 'FEF3C7', 'D1FAE5', 'EDE9FE', 'FCE7F3',
+      'CFFAFE', 'FDE68A', 'BBF7D0', 'DDD6FE', 'FBCFE8',
+      'BAE6FD', 'FED7AA', 'A7F3D0', 'C7D2FE', 'F9A8D4'
+    ];
+
+    // Build worksheet data
+    const wb = XLSX.utils.book_new();
+    const wsData = [];
+    const merges = [];
+    let currentRow = 0;
+    const numDateCols = monthDates.length;
+    const totalCols = 3 + numDateCols + 3;
+
+    // Title
+    const titleRow = new Array(totalCols).fill('');
+    const [year, month] = selectedMonth.split('-');
+    titleRow[0] = `優質基督教音樂中小學 - ${year}年${parseInt(month)}月 Wind Band 出席報告`;
+    wsData.push(titleRow);
+    merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } });
+    currentRow++;
+
+    // Empty row
+    wsData.push(new Array(totalCols).fill(''));
+    currentRow++;
+
+    const groupMeta = [];
+    let colorIdx = 0;
+
+    // Process each instrument group
+    Object.values(instrumentGroups).forEach((group) => {
+      if (group.students.length === 0) return;
+      const gStart = currentRow;
+      const bg = GROUP_BG[colorIdx % GROUP_BG.length];
+
+      // Info row 1: Instrument name
+      const infoRow1 = new Array(totalCols).fill('');
+      infoRow1[0] = `${group.instrument} (${group.students[0].instrument})`;
+      wsData.push(infoRow1);
+      merges.push({ s: { r: currentRow, c: 0 }, e: { r: currentRow, c: totalCols - 1 } });
+      currentRow++;
+
+      // Info row 2: Tutor | Room
+      const infoRow2 = new Array(totalCols).fill('');
+      infoRow2[0] = `導師：${group.tutor}　　課室：${group.room}`;
+      wsData.push(infoRow2);
+      merges.push({ s: { r: currentRow, c: 0 }, e: { r: currentRow, c: totalCols - 1 } });
+      currentRow++;
+
+      // Column header row
+      const headers = ['#', '班別學號', '學生姓名'];
+      monthDates.forEach(date => {
+        const d = new Date(date + 'T00:00:00');
+        const dayName = DAY_OF_WEEK[d.getDay()];
+        headers.push(`${d.getDate()}/${d.getMonth() + 1}\n(${dayName})`);
+      });
+      headers.push('出席', '缺席', '備註');
+      wsData.push(headers);
+      currentRow++;
+
+      // Student rows
+      group.students.forEach((student, si) => {
+        const row = [si + 1, student.classNo, student.name];
+        let presentCount = 0;
+        let absentCount = 0;
+        let reasons = [];
+
+        monthDates.forEach(date => {
+          const att = student.attendanceByDate[date];
+          if (!att.submitted) {
+            row.push('導師未點名');
+          } else if (att.status === 'present') {
+            row.push('✓');
+            presentCount++;
+          } else {
+            row.push('✗');
+            absentCount++;
+            if (att.reason) {
+              const d = new Date(date + 'T00:00:00');
+              reasons.push(`${d.getDate()}/${d.getMonth()+1}: ${att.reason}`);
+            }
+          }
+        });
+
+        row.push(presentCount, absentCount, reasons.join('; '));
+        wsData.push(row);
+        currentRow++;
+      });
+
+      // Summary row
+      const summaryRow = new Array(totalCols).fill('');
+      summaryRow[2] = '小計';
+      monthDates.forEach((date, di) => {
+        const colIdx = 3 + di;
+        let p = 0, a = 0;
+        group.students.forEach(s => {
+          const att = s.attendanceByDate[date];
+          if (att.submitted && att.status === 'present') p++;
+          if (att.submitted && att.status === 'absent') a++;
+        });
+        summaryRow[colIdx] = `${p}/${group.students.length}`;
+      });
+      const totalP = group.students.reduce((s, st) => {
+        return s + monthDates.reduce((ss, d) => ss + (st.attendanceByDate[d].submitted && st.attendanceByDate[d].status === 'present' ? 1 : 0), 0);
+      }, 0);
+      const totalA = group.students.reduce((s, st) => {
+        return s + monthDates.reduce((ss, d) => ss + (st.attendanceByDate[d].submitted && st.attendanceByDate[d].status === 'absent' ? 1 : 0), 0);
+      }, 0);
+      summaryRow[3 + numDateCols] = totalP;
+      summaryRow[3 + numDateCols + 1] = totalA;
+      wsData.push(summaryRow);
+      currentRow++;
+
+      groupMeta.push({ startRow: gStart, infoRows: 3, studentCount: group.students.length, colorIdx, bg });
+      colorIdx++;
+
+      // Empty separator row
+      wsData.push(new Array(totalCols).fill(''));
+      currentRow++;
+    });
+
+    // Create sheet & apply styles
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!merges'] = merges;
+
+    // Column widths
+    const colWidths = [{ wch: 4 }, { wch: 10 }, { wch: 14 }];
+    monthDates.forEach(() => colWidths.push({ wch: 9 }));
+    colWidths.push({ wch: 7 }, { wch: 7 }, { wch: 28 });
+    ws['!cols'] = colWidths;
+
+    // Title style
+    const titleRef = XLSX.utils.encode_cell({ r: 0, c: 0 });
+    if (ws[titleRef]) {
+      ws[titleRef].s = {
+        font: { bold: true, sz: 16, color: { rgb: '8B4513' } },
+        alignment: { horizontal: 'left', vertical: 'center' }
+      };
+    }
+
+    // Style each group
+    groupMeta.forEach(gm => {
+      const { startRow: gStart, infoRows, studentCount, bg } = gm;
+
+      // Info row 1
+      for (let c = 0; c < totalCols; c++) {
+        const ref = XLSX.utils.encode_cell({ r: gStart, c });
+        if (ws[ref]) {
+          ws[ref].s = {
+            font: { bold: true, sz: 14, color: { rgb: 'FFFFFF' } },
+            fill: { fgColor: { rgb: '8B4513' } },
+            alignment: { horizontal: 'left', vertical: 'center' },
+            border: thinBorder
+          };
+        }
+      }
+
+      // Info row 2
+      for (let c = 0; c < totalCols; c++) {
+        const ref = XLSX.utils.encode_cell({ r: gStart + 1, c });
+        if (ws[ref]) {
+          ws[ref].s = {
+            font: { bold: true, sz: 11, color: { rgb: '333333' } },
+            fill: { fgColor: { rgb: bg } },
+            alignment: { horizontal: 'left', vertical: 'center' },
+            border: thinBorder
+          };
+        }
+      }
+
+      // Column header row
+      const headerRow = gStart + 2;
+      for (let c = 0; c < totalCols; c++) {
+        const ref = XLSX.utils.encode_cell({ r: headerRow, c });
+        if (ws[ref]) {
+          ws[ref].s = {
+            font: { bold: true, sz: 10, color: { rgb: 'FFFFFF' } },
+            fill: { fgColor: { rgb: 'D2691E' } },
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+            border: thinBorder
+          };
+        }
+      }
+
+      // Student rows
+      for (let si = 0; si < studentCount; si++) {
+        const r = gStart + infoRows + si;
+        const stripeBg = si % 2 === 0 ? 'FFFFFF' : 'F5F5F5';
+        for (let c = 0; c < totalCols; c++) {
+          const ref = XLSX.utils.encode_cell({ r, c });
+          if (!ws[ref]) continue;
+          const val = ws[ref].v;
+          const isAbsent = val === '✗';
+          const isPresent = val === '✓';
+          const isNotMarked = val === '導師未點名';
+          ws[ref].s = {
+            font: {
+              sz: 10,
+              color: { rgb: isAbsent ? 'CC0000' : isPresent ? '1E8449' : isNotMarked ? '999999' : '333333' },
+              bold: isAbsent
+            },
+            fill: { fgColor: { rgb: isAbsent ? 'FFF0F0' : stripeBg } },
+            alignment: { horizontal: c <= 2 ? 'left' : 'center', vertical: 'center' },
+            border: thinBorder
+          };
+          if (c === 0) ws[ref].s.alignment.horizontal = 'center';
+        }
+      }
+
+      // Summary row
+      const summaryR = gStart + infoRows + studentCount;
+      for (let c = 0; c < totalCols; c++) {
+        const ref = XLSX.utils.encode_cell({ r: summaryR, c });
+        if (ws[ref]) {
+          ws[ref].s = {
+            font: { bold: true, sz: 10, color: { rgb: '8B4513' } },
+            fill: { fgColor: { rgb: 'E8F0FE' } },
+            alignment: { horizontal: 'center', vertical: 'center' },
+            border: thinBorder
+          };
+        }
+      }
+    });
+
+    XLSX.utils.book_append_sheet(wb, ws, '月份出席報告');
+    XLSX.writeFile(wb, `月份出席報告_${selectedMonth}.xlsx`);
+    showToast('月份報告已匯出');
+
+  } catch (err) {
+    console.error('Export error:', err);
+    showToast('匯出失敗：' + err.message, true);
+  }
+}
+
+// ==================== CHART FUNCTIONS ====================
+function showMonthCharts() {
+  const selectedMonth = document.getElementById('filter-month').value;
+  if (!selectedMonth) {
+    showToast('請選擇月份', true);
+    return;
+  }
+
+  const monthDates = CLASS_DATES.filter(d => d.startsWith(selectedMonth));
+  if (!monthDates.length) {
+    showToast('該月份沒有上課日期', true);
+    return;
+  }
+
+  document.getElementById('chart-modal').classList.remove('hidden');
+  renderCharts(monthDates);
+}
+
+function closeChartModal() {
+  document.getElementById('chart-modal').classList.add('hidden');
+}
+
+async function renderCharts(monthDates) {
+  const allRecords = [];
+  for (const date of monthDates) {
+    await fetchRecords(date);
+    const records = getRecords();
+    allRecords.push(...records.filter(r => r.date === date));
+  }
+
+  const tutorNames = Object.keys(TUTOR_DATA);
+
+  // Chart 1: Tutor submission status
+  const tutorSubmissions = {};
+  tutorNames.forEach(t => { tutorSubmissions[t] = 0; });
+  monthDates.forEach(date => {
+    tutorNames.forEach(tutor => {
+      if (allRecords.some(r => r.date === date && r.tutor.trim() === tutor.trim())) {
+        tutorSubmissions[tutor]++;
+      }
+    });
+  });
+
+  const tutorCtx = document.getElementById('tutorChart').getContext('2d');
+  if (window.tutorChartInstance) window.tutorChartInstance.destroy();
+  window.tutorChartInstance = new Chart(tutorCtx, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(tutorSubmissions),
+      datasets: [{
+        label: '已提交日數',
+        data: Object.values(tutorSubmissions),
+        backgroundColor: '#D2691E'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, max: monthDates.length }
+      }
+    }
+  });
+
+  // Chart 2: Daily attendance
+  const dailyStats = {};
+  monthDates.forEach(date => {
+    let present = 0, absent = 0;
+    allRecords.filter(r => r.date === date).forEach(record => {
+      Object.values(record.entries).forEach(entry => {
+        if (entry.status === 'present') present++;
+        else if (entry.status === 'absent') absent++;
+      });
+    });
+    dailyStats[date] = { present, absent };
+  });
+
+  const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+  if (window.dailyChartInstance) window.dailyChartInstance.destroy();
+  window.dailyChartInstance = new Chart(dailyCtx, {
+    type: 'line',
+    data: {
+      labels: monthDates.map(d => {
+        const dt = new Date(d + 'T00:00:00');
+        return `${dt.getMonth()+1}/${dt.getDate()}`;
+      }),
+      datasets: [
+        {
+          label: '出席',
+          data: monthDates.map(d => dailyStats[d].present),
+          borderColor: '#27ae60',
+          backgroundColor: 'rgba(39,174,96,0.1)',
+          fill: true
+        },
+        {
+          label: '缺席',
+          data: monthDates.map(d => dailyStats[d].absent),
+          borderColor: '#e74c3c',
+          backgroundColor: 'rgba(231,76,60,0.1)',
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+
+  // Chart 3: Absence reasons
+  const reasons = {};
+  allRecords.forEach(record => {
+    Object.values(record.entries).forEach(entry => {
+      if (entry.status === 'absent' && entry.reason) {
+        reasons[entry.reason] = (reasons[entry.reason] || 0) + 1;
+      }
+    });
+  });
+
+  const reasonCtx = document.getElementById('reasonChart').getContext('2d');
+  if (window.reasonChartInstance) window.reasonChartInstance.destroy();
+  window.reasonChartInstance = new Chart(reasonCtx, {
+    type: 'pie',
+    data: {
+      labels: Object.keys(reasons),
+      datasets: [{
+        data: Object.values(reasons),
+        backgroundColor: ['#e74c3c', '#f39c12', '#3498db', '#9b59b6', '#1abc9c']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right'
+        }
+      }
+    }
+  });
+}
+
+// ==================== TOAST ====================
+function showToast(msg, isError = false) {
+  const toast = document.createElement('div');
+  toast.className = `toast ${isError ? 'error' : 'success'}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ==================== START ====================
+init();
+</script>
+</body>
+</html>
