@@ -26,11 +26,6 @@ TUTOR_DATA = {
       "room": "Concert Hall",
       "students": [48位學生，每位包含 class_no, name, instrument]
     }
-  },
-  "Mr. Henry Cheng": {
-    "Wind Band": {
-      // 與 Dr. William So 相同的學生名單
-    }
   }
 }
 ```

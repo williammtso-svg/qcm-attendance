@@ -4,7 +4,7 @@
 這是一個基於 Google Apps Script + Google Sheets 的 Wind Band 點名系統，支持兩位導師共同管理同一班學生。
 
 ## 功能特點
-- ✅ 兩位導師（Dr. William So, Mr. Henry Cheng）共用學生名單
+- ✅ 單一導師（Dr. William So）管理學生名單
 - ✅ 按日期點名，支持出席/缺席及缺席原因記錄
 - ✅ 管理員查看報告（單日/月份模式）
 - ✅ 月份報告按樂器分組顯示

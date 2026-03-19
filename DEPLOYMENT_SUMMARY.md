@@ -6,8 +6,7 @@
 **https://williammtso-svg.github.io/qcm-attendance/**
 
 ### 🔑 登入資訊
-- **導師 1**：Dr. William So
-- **導師 2**：Mr. Henry Cheng
+- **導師**：Dr. William So
 - **管理員**：admin（無需密碼）
 
 ### 📊 系統資訊
@@ -63,7 +62,7 @@
 
 #### 導師使用流程
 1. 打開 https://williammtso-svg.github.io/qcm-attendance/
-2. 選擇導師名稱（Dr. William So 或 Mr. Henry Cheng）
+2. 選擇導師名稱（Dr. William So）
 3. 點擊「登入」
 4. 選擇上課日期
 5. 標記學生出席/缺席
