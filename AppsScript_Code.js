@@ -2,7 +2,7 @@
 // Paste this into Extensions > Apps Script in your Google Sheet
 // IMPORTANT: Replace SHEET_ID with your actual Google Sheet ID after creating the sheet
 
-const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID_HERE';
+const SHEET_ID = '1yUZ2WMAzFwgYb8SmbT5YPP9e1zbTyAOT42z3r5UKQ08';
 
 function doGet(e) {
   return handleRequest(e);
